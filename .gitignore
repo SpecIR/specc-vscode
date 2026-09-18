@@ -1,4 +1,5 @@
 node_modules/
 dist/
-media/pdfjs/
+media/pdf-viewer.js
 *.vsix
+src/viewer/pdf.worker.txt

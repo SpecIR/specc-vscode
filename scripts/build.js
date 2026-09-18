@@ -1,4 +1,5 @@
-// Bundles src/extension.ts -> dist/extension.js and vendors pdf.js into media/pdfjs.
+// Bundles src/extension.ts -> dist/extension.js and src/viewer/pdf-viewer.ts (with pdf.js
+// and its worker source embedded) -> media/pdf-viewer.js.
 const esbuild = require('esbuild');
 const fs = require('fs');
 const path = require('path');
@@ -6,17 +7,25 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const watch = process.argv.includes('--watch');
 
-function vendorPdfjs() {
-  const src = path.join(root, 'node_modules', 'pdfjs-dist', 'build');
-  const dst = path.join(root, 'media', 'pdfjs');
-  fs.mkdirSync(dst, { recursive: true });
-  for (const f of ['pdf.min.mjs', 'pdf.worker.min.mjs']) {
-    fs.copyFileSync(path.join(src, f), path.join(dst, f));
-  }
-}
+const production = process.argv.includes('--production');
 
 async function main() {
-  vendorPdfjs();
+  // Worker source is inlined into the viewer bundle (workers cannot be loaded cross-origin in webviews).
+  fs.copyFileSync(
+    path.join(root, 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.min.mjs'),
+    path.join(root, 'src', 'viewer', 'pdf.worker.txt'),
+  );
+  const viewer = await esbuild.context({
+    entryPoints: [path.join(root, 'src', 'viewer', 'pdf-viewer.ts')],
+    bundle: true,
+    platform: 'browser',
+    target: 'es2022',
+    format: 'iife',
+    loader: { '.txt': 'text' },
+    outfile: path.join(root, 'media', 'pdf-viewer.js'),
+    minify: production,
+    logLevel: 'info',
+  });
   const ctx = await esbuild.context({
     entryPoints: [path.join(root, 'src', 'extension.ts')],
     bundle: true,
@@ -25,15 +34,15 @@ async function main() {
     format: 'cjs',
     external: ['vscode'],
     outfile: path.join(root, 'dist', 'extension.js'),
-    sourcemap: !process.argv.includes('--production'),
-    minify: process.argv.includes('--production'),
+    sourcemap: !production,
+    minify: production,
     logLevel: 'info',
   });
   if (watch) {
-    await ctx.watch();
+    await Promise.all([ctx.watch(), viewer.watch()]);
   } else {
-    await ctx.rebuild();
-    await ctx.dispose();
+    await Promise.all([ctx.rebuild(), viewer.rebuild()]);
+    await Promise.all([ctx.dispose(), viewer.dispose()]);
   }
 }
 

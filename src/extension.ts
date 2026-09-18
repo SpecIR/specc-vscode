@@ -9,7 +9,7 @@ import { fileBelongsTo, findProjectUpwards, loadProject, Project, resolveProject
 export function activate(context: vscode.ExtensionContext): void {
   const builder = new Builder();
   const html = new HtmlPreview(context);
-  const pdf = new PdfPreview(context);
+  const pdf = new PdfPreview(context, builder.output);
   context.subscriptions.push(builder);
 
   builder.onDidBuild((project, result) => {

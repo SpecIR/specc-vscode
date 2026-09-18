@@ -7,7 +7,7 @@ Live preview of [SpecCompiler](https://github.com/specir/speccompiler) projects 
 - **SpecCompiler: Open HTML Preview** shows the assembled web app
   (`<output_dir>/www/index.html`) when `outputs` has an `html5` entry.
 - **SpecCompiler: Open PDF Preview** shows the LibreOffice PDF next to the docx
-  output (or `docx.pdf_path`) when `docx.export_pdf: true`. Uses a vendored pdf.js.
+  output (or `docx.pdf_path`) when `docx.export_pdf: true`. Uses a bundled pdf.js.
 - Saving any `.md` of the project (or the yaml) runs `speccompiler build <yaml>` from
   the project directory and refreshes open previews, keeping route, scroll and zoom.
 - Status bar shows build state and duration; failures open a notification with a
@@ -25,7 +25,7 @@ Live preview of [SpecCompiler](https://github.com/specir/speccompiler) projects 
 
 ```bash
 npm install
-npm run build        # bundle to dist/ and vendor pdf.js into media/pdfjs/
+npm run build        # bundle to dist/ and media/pdf-viewer.js (pdf.js + worker embedded)
 npm run watch
 npm run package      # creates specc-vscode-<version>.vsix
 code --install-extension specc-vscode-0.1.0.vsix
