@@ -1,0 +1,91 @@
+{
+  "name": "specc-vscode",
+  "displayName": "SpecCompiler Preview",
+  "description": "Live HTML/PDF preview of SpecCompiler projects: rebuilds on save and refreshes the view in place.",
+  "version": "0.1.0",
+  "publisher": "specir",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.yaml",
+    "onLanguage:markdown"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "specc.openHtml",
+        "title": "SpecCompiler: Open HTML Preview",
+        "icon": "$(browser)"
+      },
+      {
+        "command": "specc.openPdf",
+        "title": "SpecCompiler: Open PDF Preview",
+        "icon": "$(file-pdf)"
+      },
+      {
+        "command": "specc.build",
+        "title": "SpecCompiler: Build Project"
+      },
+      {
+        "command": "specc.showOutput",
+        "title": "SpecCompiler: Show Build Output"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "specc.openHtml",
+          "when": "editorLangId == markdown || resourceExtname == .yaml",
+          "group": "navigation@1"
+        },
+        {
+          "command": "specc.openPdf",
+          "when": "editorLangId == markdown || resourceExtname == .yaml",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "SpecCompiler Preview",
+      "properties": {
+        "specc.command": {
+          "type": "string",
+          "default": "specc",
+          "description": "Executable used to build. Invoked as `<command> build <project.yaml>` from the project directory."
+        },
+        "specc.buildOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Rebuild the project when one of its doc_files (or the project yaml) is saved."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "watch": "node scripts/build.js --watch",
+    "package": "bash scripts/package.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.32.0",
+    "esbuild": "^0.24.0",
+    "pdfjs-dist": "^4.10.38",
+    "typescript": "^5.4.0",
+    "yaml": "^2.4.0"
+  },
+  "overrides": {
+    "undici": "^5.28.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SpecIR/specc-vscode.git"
+  }
+}
