@@ -15,7 +15,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(builder);
   const db = new SpecDb(context.extensionPath);
   context.subscriptions.push(db);
-  registerNavigation(context, db);
+  registerNavigation(context, db, builder.output);
 
   builder.onDidBuild((project, result) => {
     if (!result.ok) return;

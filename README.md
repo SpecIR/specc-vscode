@@ -10,9 +10,10 @@ Live preview of [SpecCompiler](https://github.com/specir/speccompiler) projects 
   output (or `docx.pdf_path`) when `docx.export_pdf: true`. Uses a bundled pdf.js.
 - Saving any `.md` of the project (or the yaml) runs `speccompiler build <yaml>` from
   the project directory and refreshes open previews, keeping route, scroll and zoom.
-- **Go to definition** on CommonSpec references: Ctrl+click, F12 or hover on
-  `[PID](@)` and `[type:label](#)` jumps to the object or float's source line,
-  looked up in `<output_dir>/specir.db` (reloaded automatically after each build).
+- **Navigate CommonSpec references** using `<output_dir>/specir.db` (reloaded
+  after each build): Ctrl+click or F12 on `[PID](@)` / `[type:label](#)` jumps
+  to the object or float's source line; hover shows what it is; Shift+F12 on a
+  reference or on a heading's `@PID` lists every relation that targets it.
 - **Include blocks**: paths inside ```` ```include ```` fences are clickable links.
 - Status bar shows build state and duration; failures open a notification with a
   link to the **SpecCompiler** output channel. **SpecCompiler: Build Project**
@@ -39,7 +40,7 @@ Press F5 in VS Code with this folder open to launch an Extension Development Hos
 
 ## Releasing
 
-Every push to `main` uploads the vsix as a workflow artifact. To publish a release:
+Every push uploads the vsix as a workflow artifact. To publish a release:
 
 ```bash
 npm version patch          # bumps package.json and creates tag vX.Y.Z

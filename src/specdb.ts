@@ -127,6 +127,25 @@ export class SpecDb {
     ];
   }
 
+  /** Incoming references (spec_relations) to an object by pid or to an object/float by label. */
+  async referencesTo(project: Project, kind: '@' | '#', target: string): Promise<Array<Location & { sourcePid: string | null; relation: string | null }>> {
+    const label = kind === '#' ? target.split(':').slice(-2).join(':') : target;
+    const where = kind === '@' ? 't.pid = ?' : 't.label = ?';
+    const objRefs = await this.rows<any>(project,
+      `SELECT r.from_file, r.link_line, r.type_ref, o.pid AS source_pid
+         FROM spec_relations r JOIN spec_objects t ON r.target_object_id = t.id
+         LEFT JOIN spec_objects o ON r.source_object_id = o.id WHERE ${where}`, [kind === '@' ? target : label]);
+    const floatRefs = kind === '#'
+      ? await this.rows<any>(project,
+        `SELECT r.from_file, r.link_line, r.type_ref, o.pid AS source_pid
+           FROM spec_relations r JOIN spec_floats f ON r.target_float_id = f.id
+           LEFT JOIN spec_objects o ON r.source_object_id = o.id WHERE f.label = ?`, [label])
+      : [];
+    return [...objRefs, ...floatRefs].map((r) => ({
+      file: this.abs(project, r.from_file), line: r.link_line || 1, sourcePid: r.source_pid, relation: r.type_ref,
+    }));
+  }
+
   dispose(): void {
     for (const c of this.cache.values()) c.db.close();
     this.cache.clear();

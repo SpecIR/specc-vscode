@@ -2,7 +2,7 @@
   "name": "specc-vscode",
   "displayName": "SpecCompiler Preview",
   "description": "Live HTML/PDF preview of SpecCompiler projects: rebuilds on save and refreshes the view in place.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "specir",
   "license": "MIT",
   "engines": {
