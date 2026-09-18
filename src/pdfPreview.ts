@@ -52,7 +52,15 @@ export class PdfPreview {
   private sendPdf(): void {
     try {
       const data = fs.readFileSync(this.pdfPath!);
-      void this.panel!.webview.postMessage({ type: 'pdf', data: new Uint8Array(data.buffer, data.byteOffset, data.byteLength) });
+      // Webview.postMessage only guarantees type-preserving binary transport for
+      // ArrayBuffer. A Uint8Array may be JSON-serialized into a plain object and
+      // reconstructed as an empty array in the webview.
+      const bytes = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+      void this.panel!.webview.postMessage({ type: 'pdf', data: bytes }).then((delivered) => {
+        if (!delivered) this.output.appendLine('[PDF preview] PDF bytes were not delivered to the webview.');
+      }, (e) => {
+        this.output.appendLine(`[PDF preview] Could not send PDF bytes: ${(e as Error)?.message ?? e}`);
+      });
     } catch (e) {
       void vscode.window.showErrorMessage(`SpecCompiler: cannot read ${this.pdfPath}: ${(e as Error).message}`);
     }
@@ -80,7 +88,7 @@ export class PdfPreview {
     const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
     this.loaded = true;
     webview.html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; worker-src blob:; img-src ${csp} blob: data:; style-src ${csp} 'unsafe-inline';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}' ${csp}; worker-src blob:; img-src ${csp} blob: data:; style-src ${csp} 'unsafe-inline';">
 <style>
   html,body{margin:0;height:100%;background:var(--vscode-editor-background);color:var(--vscode-foreground);font-family:var(--vscode-font-family)}
   #bar{flex-wrap:wrap;position:sticky;top:0;z-index:2;display:flex;gap:.5rem;align-items:center;padding:.3rem .6rem;background:var(--vscode-editorWidget-background);border-bottom:1px solid var(--vscode-widget-border,#0003);font-size:12px}
@@ -88,13 +96,15 @@ export class PdfPreview {
   #bar button:hover{background:var(--vscode-button-secondaryHoverBackground)}
   #status{margin-left:auto;opacity:.8}
   #pages{padding:12px;display:flex;flex-direction:column;align-items:center;gap:12px}
-  canvas{box-shadow:0 1px 6px #0006;background:#fff;max-width:100%}
+  .page{position:relative;flex:none;background:#fff;box-shadow:0 1px 6px #0006}
+  .page canvas{display:block}
+  .page-number{position:absolute;right:6px;bottom:4px;color:#555;font:10px sans-serif;opacity:.55}
   #pages.stale{opacity:.5;transition:opacity .2s}
 </style></head><body>
 <div id="bar">
   <button id="zoomOut" title="Zoom out">−</button><span id="zoom">100%</span><button id="zoomIn" title="Zoom in">+</button>
   <button id="fit" title="Fit width">Fit width</button>
-  <span id="status"></span>
+  <span id="status">Starting viewer…</span>
 </div>
 <div id="pages"></div>
 <script nonce="${nonce}" src="${viewer}"></script>

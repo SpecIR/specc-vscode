@@ -1,5 +1,7 @@
 node_modules/
 dist/
 media/pdf-viewer.js
+media/sql-wasm.js
+media/sql-wasm.wasm
 *.vsix
 src/viewer/pdf.worker.txt

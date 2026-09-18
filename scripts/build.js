@@ -15,6 +15,10 @@ async function main() {
     path.join(root, 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.min.mjs'),
     path.join(root, 'src', 'viewer', 'pdf.worker.txt'),
   );
+  // sql.js (wasm) is required at runtime from media/ so the .wasm can be located next to it.
+  for (const f of ['sql-wasm.js', 'sql-wasm.wasm']) {
+    fs.copyFileSync(path.join(root, 'node_modules', 'sql.js', 'dist', f), path.join(root, 'media', f));
+  }
   const viewer = await esbuild.context({
     entryPoints: [path.join(root, 'src', 'viewer', 'pdf-viewer.ts')],
     bundle: true,

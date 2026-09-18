@@ -4,6 +4,8 @@ import * as vscode from 'vscode';
 import { Builder } from './builder';
 import { HtmlPreview } from './htmlPreview';
 import { PdfPreview } from './pdfPreview';
+import { registerNavigation } from './navigation';
+import { SpecDb } from './specdb';
 import { fileBelongsTo, findProjectUpwards, loadProject, Project, resolveProject } from './project';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -11,6 +13,9 @@ export function activate(context: vscode.ExtensionContext): void {
   const html = new HtmlPreview(context);
   const pdf = new PdfPreview(context, builder.output);
   context.subscriptions.push(builder);
+  const db = new SpecDb(context.extensionPath);
+  context.subscriptions.push(db);
+  registerNavigation(context, db);
 
   builder.onDidBuild((project, result) => {
     if (!result.ok) return;

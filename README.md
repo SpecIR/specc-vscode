@@ -10,6 +10,10 @@ Live preview of [SpecCompiler](https://github.com/specir/speccompiler) projects 
   output (or `docx.pdf_path`) when `docx.export_pdf: true`. Uses a bundled pdf.js.
 - Saving any `.md` of the project (or the yaml) runs `speccompiler build <yaml>` from
   the project directory and refreshes open previews, keeping route, scroll and zoom.
+- **Go to definition** on CommonSpec references: Ctrl+click, F12 or hover on
+  `[PID](@)` and `[type:label](#)` jumps to the object or float's source line,
+  looked up in `<output_dir>/specir.db` (reloaded automatically after each build).
+- **Include blocks**: paths inside ```` ```include ```` fences are clickable links.
 - Status bar shows build state and duration; failures open a notification with a
   link to the **SpecCompiler** output channel. **SpecCompiler: Build Project**
   builds on demand.
@@ -25,10 +29,10 @@ Live preview of [SpecCompiler](https://github.com/specir/speccompiler) projects 
 
 ```bash
 npm install
-npm run build        # bundle to dist/ and media/pdf-viewer.js (pdf.js + worker embedded)
+npm run build        # bundle to dist/ and media/ (pdf.js viewer, sql.js wasm)
 npm run watch
 npm run package      # creates specc-vscode-<version>.vsix
-code --install-extension specc-vscode-0.1.0.vsix
+code --install-extension specc-vscode-0.1.1.vsix
 ```
 
 Press F5 in VS Code with this folder open to launch an Extension Development Host.
