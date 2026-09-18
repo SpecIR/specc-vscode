@@ -66,9 +66,10 @@ export class PdfPreview {
     const worker = webview.asWebviewUri(vscode.Uri.joinPath(media, 'pdfjs', 'pdf.worker.min.mjs'));
     const viewer = webview.asWebviewUri(vscode.Uri.joinPath(media, 'pdf-viewer.js'));
     const csp = webview.cspSource;
+    const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
     this.loaded = true;
     webview.html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${csp} blob:; worker-src blob:; connect-src ${csp}; img-src ${csp} blob: data:; style-src ${csp} 'unsafe-inline';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}' ${csp} blob:; worker-src blob:; connect-src ${csp}; img-src ${csp} blob: data:; style-src ${csp} 'unsafe-inline';">
 <style>
   html,body{margin:0;height:100%;background:var(--vscode-editor-background);color:var(--vscode-foreground);font-family:var(--vscode-font-family)}
   #bar{position:sticky;top:0;z-index:2;display:flex;gap:.5rem;align-items:center;padding:.3rem .6rem;background:var(--vscode-editorWidget-background);border-bottom:1px solid var(--vscode-widget-border,#0003);font-size:12px}
@@ -85,10 +86,14 @@ export class PdfPreview {
   <span id="status"></span>
 </div>
 <div id="pages"></div>
-<script type="module">
+<script nonce="${nonce}">
+  window.addEventListener('error', function (e) { document.getElementById('status').textContent = 'Viewer error: ' + e.message; });
+  window.addEventListener('unhandledrejection', function (e) { document.getElementById('status').textContent = 'Viewer error: ' + (e.reason && e.reason.message || e.reason); });
+</script>
+<script type="module" nonce="${nonce}">
   import * as pdfjsLib from "${lib}";
   window.__specc = { pdfjsLib, workerUrl: "${worker}", pdfUrl: "${this.pdfUrl()}" };
-  import("${viewer}");
+  await import("${viewer}");
 </script>
 </body></html>`;
   }

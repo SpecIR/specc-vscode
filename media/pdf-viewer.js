@@ -16,8 +16,14 @@ let pendingUrl = null;
 
 async function setupWorker() {
   // Workers must be same-origin; the resource scheme is not, so load the worker source as a blob.
-  const src = await (await fetch(workerUrl)).text();
-  pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+  try {
+    const src = await (await fetch(workerUrl)).text();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+  } catch (e) {
+    // pdf.js falls back to running the worker code on the main thread from this URL.
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+    setStatus('Worker unavailable, rendering on main thread');
+  }
 }
 
 function setStatus(text) { statusEl.textContent = text; }
