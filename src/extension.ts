@@ -6,15 +6,17 @@ import { HtmlPreview } from './htmlPreview';
 import { PdfPreview } from './pdfPreview';
 import { registerNavigation } from './navigation';
 import { SpecDb } from './specdb';
+import { PreviewNavigation } from './previewNavigation';
 import { fileBelongsTo, findProjectUpwards, loadProject, Project, resolveProject } from './project';
 
 export function activate(context: vscode.ExtensionContext): void {
   const builder = new Builder();
-  const html = new HtmlPreview(context);
-  const pdf = new PdfPreview(context, builder.output);
   context.subscriptions.push(builder);
   const db = new SpecDb(context.extensionPath);
   context.subscriptions.push(db);
+  const navigation = new PreviewNavigation(context, db, builder.output);
+  const html = new HtmlPreview(context, navigation);
+  const pdf = new PdfPreview(context, builder.output, navigation);
   registerNavigation(context, db, builder.output);
 
   builder.onDidBuild((project, result) => {

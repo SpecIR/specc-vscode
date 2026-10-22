@@ -21,6 +21,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx tsc -p tsconfig.json
+      - run: npm test
       - name: Package VSIX
         run: |
           node scripts/build.js --production

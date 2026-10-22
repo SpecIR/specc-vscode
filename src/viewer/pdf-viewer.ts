@@ -4,6 +4,7 @@
 import * as pdfjsLib from 'pdfjs-dist';
 // Copied from pdfjs-dist by scripts/build.js and inlined as text.
 import workerSource from './pdf.worker.txt';
+import { PdfNavigation } from './pdf-navigation';
 
 declare function acquireVsCodeApi(): { getState(): any; setState(s: any): void; postMessage(m: any): void };
 
@@ -21,6 +22,7 @@ let pending: Uint8Array | null = null;
 let renderVersion = 0;
 let observer: IntersectionObserver | null = null;
 const activeRenders = new Set<pdfjsLib.RenderTask>();
+const navigation = new PdfNavigation(vscode, () => pdf, pagesEl, setStatus);
 
 function setStatus(text: string) {
   statusEl.textContent = text;
@@ -43,6 +45,7 @@ window.addEventListener('scroll', () => { scrollTop = window.scrollY; saveState(
 async function load(data: Uint8Array) {
   if (loading) { pending = data; return; }
   loading = true;
+  navigation.reset();
   pagesEl.classList.add('stale');
   setStatus(`Loading ${formatBytes(data.byteLength)}…`);
   try {
@@ -52,6 +55,7 @@ async function load(data: Uint8Array) {
     pdf = doc;
     if (old) await old.destroy();
     await layoutPages(doc);
+    navigation.loaded();
     setStatus(`${pdf.numPages} page${pdf.numPages === 1 ? '' : 's'} · ${new Date().toLocaleTimeString()}`);
   } catch (e) {
     setStatus('Failed to load PDF: ' + ((e as Error)?.message ?? e));
@@ -108,6 +112,7 @@ async function layoutPages(doc: pdfjsLib.PDFDocumentProxy) {
     const viewport = page.getViewport({ scale: s });
     const shell = document.createElement('div');
     shell.className = 'page';
+    shell.dataset.page = String(i);
     shell.style.width = Math.floor(viewport.width) + 'px';
     shell.style.height = Math.floor(viewport.height) + 'px';
     const pageNumber = document.createElement('span');

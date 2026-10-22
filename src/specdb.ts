@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Project } from './project';
+import { SourceTarget } from './previewTargets';
 
 export interface Location {
   file: string; // absolute
@@ -102,6 +103,27 @@ export class SpecDb {
     const rows = await this.rows<any>(project,
       'SELECT pid,label,type_ref,title_text,specification_ref,from_file,start_line FROM spec_objects WHERE pid = ?', [pid]);
     return rows.map((r) => this.toObject(project, r));
+  }
+
+  /** Stable entity keys and rendered anchors, scoped by specification. */
+  async previewTargets(project: Project): Promise<SourceTarget[]> {
+    const rows = await this.rows<any>(project, `
+      SELECT 'document' AS kind, identifier AS entity_id, identifier AS spec,
+             root_path AS file, 1 AS line, NULL AS end_line,
+             pid AS anchor, identifier AS label, long_name AS title
+        FROM specifications
+      UNION ALL
+      SELECT 'object', id, specification_ref, from_file, start_line, end_line,
+             pid, label, title_text FROM spec_objects WHERE start_line > 0
+      UNION ALL
+      SELECT 'float', id, specification_ref, from_file, start_line, NULL,
+             anchor, label, caption FROM spec_floats WHERE start_line > 0`, []);
+    return rows.filter(r => r.file).map(r => ({
+      key: `${r.kind}:${r.entity_id}`, kind: r.kind, spec: r.spec,
+      file: this.abs(project, r.file), line: r.line, endLine: r.end_line,
+      anchors: [...new Set<string>([r.anchor, r.label].filter(Boolean))],
+      title: r.title ?? '',
+    }));
   }
 
   /** `[type:label](#)` or `[scope:type:label](#)`: objects first, then floats. */

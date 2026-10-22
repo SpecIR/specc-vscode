@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { escapeHtml, placeholder } from './htmlPreview';
 import { Project } from './project';
+import { PreviewNavigation } from './previewNavigation';
 
 export class PdfPreview {
   private panel: vscode.WebviewPanel | undefined;
@@ -11,7 +12,8 @@ export class PdfPreview {
   private loaded = false;
   private messageSub: vscode.Disposable | undefined;
 
-  constructor(private readonly context: vscode.ExtensionContext, private readonly output: vscode.OutputChannel) {}
+  constructor(private readonly context: vscode.ExtensionContext, private readonly output: vscode.OutputChannel,
+    private readonly navigation: PreviewNavigation) {}
 
   boundTo(project: Project): boolean {
     return !!this.panel && this.project?.yamlPath === project.yamlPath;
@@ -34,6 +36,8 @@ export class PdfPreview {
         this.messageSub = undefined;
       }, null, this.context.subscriptions);
       this.loaded = false;
+      this.navigation.attach(this.panel, () => this.project,
+        () => this.project?.docxOutputs.filter(o => o.pdfPath === this.pdfPath).map(o => o.specId));
     } else {
       this.panel.reveal(undefined, true);
     }
@@ -67,6 +71,7 @@ export class PdfPreview {
   }
 
   private load(): void {
+    this.navigation.loading(this.panel!);
     const webview = this.panel!.webview;
     if (!fs.existsSync(this.pdfPath!)) {
       this.loaded = false;

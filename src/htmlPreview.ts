@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Project } from './project';
+import { PreviewNavigation } from './previewNavigation';
 
 /**
  * Injected before any script of index.html. Restores the hash route before the
@@ -12,6 +13,7 @@ import { Project } from './project';
 const STATE_SCRIPT = `
 (function () {
   var vscode = acquireVsCodeApi();
+  window.addEventListener('load', function () { SpeccHtmlNavigation.install(vscode); });
   var state = vscode.getState() || {};
   if (state.hash && !location.hash) { location.hash = state.hash; }
 
@@ -74,7 +76,7 @@ export class HtmlPreview {
   private panel: vscode.WebviewPanel | undefined;
   private project: Project | undefined;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly context: vscode.ExtensionContext, private readonly navigation: PreviewNavigation) {}
 
   boundTo(project: Project): boolean {
     return !!this.panel && this.project?.yamlPath === project.yamlPath;
@@ -86,13 +88,17 @@ export class HtmlPreview {
       this.panel = vscode.window.createWebviewPanel('specc.html', 'SpecCompiler HTML', vscode.ViewColumn.Beside, {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(project.rootDir), vscode.Uri.file(project.outputDir)],
+        localResourceRoots: [vscode.Uri.file(project.rootDir), vscode.Uri.file(project.outputDir), vscode.Uri.joinPath(this.context.extensionUri, 'media')],
         enableFindWidget: true,
       });
       this.panel.onDidDispose(() => { this.panel = undefined; }, null, this.context.subscriptions);
+      this.navigation.attach(this.panel, () => this.project);
     } else {
       this.panel.reveal(undefined, true);
     }
+    this.panel.webview.options = { ...this.panel.webview.options, localResourceRoots: [
+      vscode.Uri.file(project.rootDir), vscode.Uri.file(project.outputDir), vscode.Uri.joinPath(this.context.extensionUri, 'media'),
+    ] };
     this.panel.title = `${project.name} · HTML`;
     this.refresh();
   }
@@ -100,6 +106,7 @@ export class HtmlPreview {
   /** Reloads index.html from disk. No-op when the panel is closed. */
   refresh(): void {
     if (!this.panel || !this.project) return;
+    this.navigation.loading(this.panel);
     const file = this.project.indexHtml;
     if (!fs.existsSync(file)) {
       this.panel.webview.html = placeholder(
@@ -114,6 +121,7 @@ export class HtmlPreview {
   private transform(html: string, baseDir: string): string {
     const webview = this.panel!.webview;
     const csp = webview.cspSource;
+    const navigation = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'html-navigation.js'));
     // Relative asset references (e.g. ../diagrams/x.png) must go through the webview resource scheme.
     html = html.replace(
       /(<(?:img|script|link|source|video|audio|object)\b[^>]*?\s(?:src|href|data)=")([^"]+)(")/gi,
@@ -127,7 +135,7 @@ export class HtmlPreview {
       `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${csp} data: blob:; ` +
       `style-src ${csp} 'unsafe-inline'; font-src ${csp} data:; script-src ${csp} 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; ` +
       `connect-src ${csp} data: blob:; worker-src blob:;">` +
-      `<script>${STATE_SCRIPT}</script>`;
+      `<script src="${navigation}"></script><script>${STATE_SCRIPT}</script>`;
     if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => m + head);
     return head + html;
   }

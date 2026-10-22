@@ -10,6 +10,7 @@ const watch = process.argv.includes('--watch');
 const production = process.argv.includes('--production');
 
 async function main() {
+  fs.mkdirSync(path.join(root, 'media'), { recursive: true });
   // Worker source is inlined into the viewer bundle (workers cannot be loaded cross-origin in webviews).
   fs.copyFileSync(
     path.join(root, 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.min.mjs'),
@@ -42,11 +43,17 @@ async function main() {
     minify: production,
     logLevel: 'info',
   });
+  const htmlNavigation = await esbuild.context({
+    entryPoints: [path.join(root, 'src', 'viewer', 'html-navigation.ts')],
+    bundle: true, platform: 'browser', target: 'es2022', format: 'iife',
+    globalName: 'SpeccHtmlNavigation', outfile: path.join(root, 'media', 'html-navigation.js'),
+    minify: production, logLevel: 'info',
+  });
   if (watch) {
-    await Promise.all([ctx.watch(), viewer.watch()]);
+    await Promise.all([ctx.watch(), viewer.watch(), htmlNavigation.watch()]);
   } else {
-    await Promise.all([ctx.rebuild(), viewer.rebuild()]);
-    await Promise.all([ctx.dispose(), viewer.dispose()]);
+    await Promise.all([ctx.rebuild(), viewer.rebuild(), htmlNavigation.rebuild()]);
+    await Promise.all([ctx.dispose(), viewer.dispose(), htmlNavigation.dispose()]);
   }
 }
 
